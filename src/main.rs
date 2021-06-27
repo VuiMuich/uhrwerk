@@ -202,12 +202,11 @@ fn main() {
         )
       .get_matches();
 
-    if matches.occurrences_of("quit") == 1 {
-      println!("{}", get_time_in_words(Local::now()));
-      return
-      };
     let mut next_minute = (Local::now().minute() + 1) % 60;
     println!("{}", get_time_in_words(Local::now()));
+    if matches.occurrences_of("quit") == 1 {
+      return
+      };
     loop {
         let local: DateTime<Local> = Local::now();
         if local.minute() == next_minute {
