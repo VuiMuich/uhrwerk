@@ -56,7 +56,7 @@ struct SpecialCases {
     noon: String,
 }
 
-// TODO 
+// TODO
 // - clean up 'err' and make fn panic
 // - import language templates
 // - default to english
