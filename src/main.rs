@@ -189,30 +189,37 @@ fn get_time_in_words(local: DateTime<Local>) -> String {
     }
 }
 
+fn get_sys_time() -> time::SystemTime {
+    time::SystemTime::now()
+}
+
 fn main() {
     let matches = App::new("Uhrwerk")
-      .author("Johannes Mayrhofer")
-      .version(env!("CARGO_PKG_VERSION"))
-      .about("prints current system time in words continuously")
-      .arg(
+        .author("Johannes Mayrhofer")
+        .version(env!("CARGO_PKG_VERSION"))
+        .about("prints current system time in words continuously")
+        .arg(
             Arg::with_name("quit")
-              .short("q")
-              .long("quit")
-              .help("Prints time in words only once.")
+                .short("q")
+                .long("quit")
+                .help("Prints time in words only once."),
         )
-      .get_matches();
+        .get_matches();
 
-    let mut next_minute = (Local::now().minute() + 1) % 60;
     println!("{}", get_time_in_words(Local::now()));
     if matches.occurrences_of("quit") == 1 {
-      return
-      };
+        return;
+    };
+
+    let mut earlier = get_sys_time();
     loop {
         let local: DateTime<Local> = Local::now();
-        if local.minute() == next_minute {
+        if get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(59)
+            || local.second() == 0
+        {
             println!("{}", get_time_in_words(local));
-            next_minute = (local.minute() + 1) % 60;
+            earlier = get_sys_time();
         }
-        thread::sleep(time::Duration::from_millis(1000));
+        thread::sleep(time::Duration::from_secs(1));
     }
 }
