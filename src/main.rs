@@ -1,8 +1,14 @@
-use chrono::prelude::*;
+// Uhrwerk is a CLI tool to print 'time in words'
+// It is heavily inspired by TickeTack (www.ticketack.de) and actually uses their language strings currently
+// Copyright 2021, Johannes Mayrhofer
+// License MIT
+
+use chrono::{DateTime, Local, Timelike};
 use clap::{App, Arg};
 use rand::seq::SliceRandom;
 use std::{thread, time};
 
+// TODO implement structs properly
 struct Hours {
     one: String,
     two: String,
@@ -50,6 +56,10 @@ struct SpecialCases {
     noon: String,
 }
 
+// TODO 
+// - clean up 'err' and make fn panic
+// - import language templates
+// - default to english
 fn get_time_in_words(local: DateTime<Local>) -> String {
     let minutes = Minutes {
         five_past: String::from("fünf nach"),
@@ -176,16 +186,16 @@ fn get_time_in_words(local: DateTime<Local>) -> String {
     if let Some(is_special_case) = special_cases {
         is_special_case
     } else if minuten == 0 {
-        return format!("Es ist {} {}.", preposition.unwrap(), hour_string);
+        format!("Es ist {} {}.", preposition.unwrap(), hour_string)
     } else if preposition == Some(&String::from("")) {
-        return format!("Es ist {} {}.", mini_string, hour_string);
+        format!("Es ist {} {}.", mini_string, hour_string)
     } else {
-        return format!(
+        format!(
             "Es ist {} {} {}.",
             preposition.unwrap(),
             mini_string,
             hour_string
-        );
+        )
     }
 }
 
@@ -193,6 +203,9 @@ fn get_sys_time() -> time::SystemTime {
     time::SystemTime::now()
 }
 
+// TODO:
+// - add 'write to file'
+// - handle Errors
 fn main() {
     let matches = App::new("Uhrwerk")
         .author("Johannes Mayrhofer")
@@ -224,3 +237,5 @@ fn main() {
         thread::sleep(time::Duration::from_secs(1));
     }
 }
+
+// TODO write Tests for special cases, testing randomness of prepositions, check some random times.
