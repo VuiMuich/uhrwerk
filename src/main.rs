@@ -173,8 +173,8 @@ fn get_time_in_words(local: DateTime<Local>) -> String {
         "12:00" => Some(special_cases.noon),
         _ => None,
     };
-    if special_cases.is_some() {
-        special_cases.unwrap()
+    if let Some(is_special_case) = special_cases {
+        is_special_case
     } else if minuten == 0 {
         return format!("Es ist {} {}.", preposition.unwrap(), hour_string);
     } else if preposition == Some(&String::from("")) {
@@ -214,8 +214,9 @@ fn main() {
     let mut earlier = get_sys_time();
     loop {
         let local: DateTime<Local> = Local::now();
-        if get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(59)
-            || local.second() == 0
+        // Print on every full minute and update immediatley if the last update happened more then a minute ago
+        if local.second() == 0
+            || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(59)
         {
             println!("{}", get_time_in_words(local));
             earlier = get_sys_time();
