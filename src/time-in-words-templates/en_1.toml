@@ -22,7 +22,7 @@ minutes = [
   'quarter past',
   'twenty past',
   'twenty-five past',
-  'kalf past',
+  'half past',
   'twenty-five to',
   'twenty to',
   'quarter to',
@@ -51,6 +51,11 @@ special_cases = [
   "It’s noon."
 ]
 
+start_sentence = ["It's", "It is"]
+end_sentence = ["o'clock"]
+
+on_the_hour_template = ['start_sentence', 'preposition', 'hour', 'end_sentence']
+normal_template = ['start_sentence', 'preposition','minute','hour']
 #onTheHourTemplate = "It’s {{ p }} {{ h }} o’clock."
 #template = "It’s {{ p }} {{ m }} {{ h }}."
 

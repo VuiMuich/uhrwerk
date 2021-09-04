@@ -18,24 +18,10 @@ struct Template {
     pub minutes: Minutes,
     pub prepositions: Prepositions,
     pub special_cases: SpecialCases,
-}
-
-impl Template {
-    fn new(
-        language: String,
-        hours: Hours,
-        minutes: Minutes,
-        prepositions: Prepositions,
-        special_cases: SpecialCases,
-    ) -> Self {
-        Self {
-            language,
-            hours,
-            minutes,
-            prepositions,
-            special_cases,
-        }
-    }
+    pub start_sentence: Vec<String>,
+    pub end_sentence: Vec<String>,
+    pub on_the_hour_template: Vec<String>,
+    pub normal_template: Vec<String>,
 }
 
 impl Default for Template {
@@ -103,13 +89,31 @@ impl Default for Template {
             ],
             prepo_err: vec![String::from("Bitte was??")],
         };
-        println!("Default template loaded.");
+        let start_sentence = vec![String::from("Es ist")];
+        let end_sentence = vec![String::from("Uhr")];
+        let on_the_hour_template = vec![
+            String::from("start_sentence"),
+            String::from("prepostition"),
+            String::from("hour"),
+            String::from("end_sentence"),
+        ];
+        let normal_template = vec![
+            String::from("start_sentence"),
+            String::from("prepostition"),
+            String::from("minute"),
+            String::from("hour"),
+        ];
+        //println!("Default template loaded.");
         Template {
             language: language,
             hours: hours,
             minutes: minutes,
             prepositions: prepositions,
             special_cases: special_cases,
+            start_sentence: start_sentence,
+            end_sentence: end_sentence,
+            on_the_hour_template: on_the_hour_template,
+            normal_template: normal_template,
         }
     }
 }
@@ -171,6 +175,7 @@ struct SpecialCases {
 fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     let delta_minute = local.minute() % 5;
     // print!("Modulo 5 Minuten: {}, ", delta_minute);
+    let start_sentence = template.start_sentence.choose(&mut rand::thread_rng());
     let preposition = match delta_minute {
         3 | 4 => template.prepositions.almost.choose(&mut rand::thread_rng()),
         0 => template
@@ -241,12 +246,13 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     if let Some(is_special_case) = special_cases {
         is_special_case.to_string()
     } else if minuten == 0 {
-        format!("Es ist {} {}.", preposition.unwrap(), hour_string)
+        format!("{} {} {}.", start_sentence.unwrap(), preposition.unwrap(), hour_string)
     } else if preposition == Some(&String::from("")) {
-        format!("Es ist {} {}.", mini_string, hour_string)
+        format!("{} {} {}.", start_sentence.unwrap(), mini_string, hour_string)
     } else {
         format!(
-            "Es ist {} {} {}.",
+            "{} {} {} {}.",
+            start_sentence.unwrap(),
             preposition.unwrap(),
             mini_string,
             hour_string
@@ -317,8 +323,11 @@ fn main() {
         )
         .get_matches();
 
-    let template_path = String::from(matches.value_of("template").unwrap());
-    let template = load_template(Some(template_path));
+    let template_path = matches.value_of("template");
+    let template = match template_path {
+        Some(t) => load_template(Some(t.to_string())),
+        _ => Template::default(),
+    };
     println!("{}", get_time_in_words(&template, Local::now()));
     if matches.occurrences_of("quit") == 1 {
         return;
