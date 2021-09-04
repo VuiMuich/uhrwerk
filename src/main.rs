@@ -28,17 +28,17 @@ impl Default for Template {
     fn default() -> Self {
         let language = String::from("default_deutsch");
         let minutes: Minutes = Minutes {
-            five_past: String::from("fünf nach"),
+            five_past: String::from("f\u{fc}nf nach"),
             ten_past: String::from("zehn nach"),
             quarter_past: String::from("viertel nach"),
             twenty_past: String::from("zehn vor halb"),
-            twenty_five_past: String::from("fünf vor halb"),
+            twenty_five_past: String::from("f\u{fc}nf vor halb"),
             half_past: String::from("halb"),
-            twenty_five_to: String::from("fünf nach halb"),
+            twenty_five_to: String::from("f\u{fc}nf nach halb"),
             twenty_to: String::from("zehn nach halb"),
             quarter_to: String::from("dreiviertel"),
             ten_to: String::from("zehn vor"),
-            five_to: String::from("fünf vor"),
+            five_to: String::from("f\u{fc}nf vor"),
             mini_err: String::from("Deine Minuten sind kaputt."),
         };
 
@@ -47,21 +47,21 @@ impl Default for Template {
             two: String::from("zwei"),
             three: String::from("drei"),
             four: String::from("vier"),
-            five: String::from("fünf"),
+            five: String::from("f\u{fc}nf"),
             six: String::from("sechs"),
             seven: String::from("sieben"),
             eight: String::from("acht"),
             nine: String::from("neun"),
             ten: String::from("zehn"),
             eleven: String::from("elf"),
-            twelve: String::from("zwölf"),
+            twelve: String::from("zw\u{f6}lf"),
             hour_err: String::from("Was ist mit deinen Stunden los?"),
         };
         let special_cases: SpecialCases = SpecialCases {
             before_midnight: String::from("Es ist gleich Mitternacht."),
             midnight: String::from("Es ist Mitternacht."),
             after_midnight: String::from("Es ist nach Mitternacht."),
-            two_to_one: String::from("Es ist demnächst ein Uhr."),
+            two_to_one: String::from("Es ist demn\u{e4}chst ein Uhr."),
             one_to_one: String::from("Es ist kurz vor ein Uhr."),
             exactly_one: String::from("Es ist ein Uhr."),
             one_past_one: String::from("Es ist kurz nach ein Uhr."),
@@ -72,7 +72,7 @@ impl Default for Template {
             almost: vec![
                 String::from("gleich"),
                 String::from("fast"),
-                String::from("in Kürze"),
+                String::from("in Kl\u{fc}rze"),
                 String::from("bald"),
                 String::from("beinahe"),
             ],
@@ -85,7 +85,7 @@ impl Default for Template {
             roughly: vec![
                 String::from("circa"),
                 String::from("etwa"),
-                String::from("ungefähr"),
+                String::from("ungef\u{e4}hr"),
             ],
             prepo_err: vec![String::from("Bitte was??")],
         };
@@ -105,15 +105,15 @@ impl Default for Template {
         ];
         //println!("Default template loaded.");
         Template {
-            language: language,
-            hours: hours,
-            minutes: minutes,
-            prepositions: prepositions,
-            special_cases: special_cases,
-            start_sentence: start_sentence,
-            end_sentence: end_sentence,
-            on_the_hour_template: on_the_hour_template,
-            normal_template: normal_template,
+            language,
+            hours,
+            minutes,
+            prepositions,
+            special_cases,
+            start_sentence,
+            end_sentence,
+            on_the_hour_template,
+            normal_template,
         }
     }
 }
@@ -265,13 +265,12 @@ fn get_sys_time() -> time::SystemTime {
 }
 
 fn load_template(template_path: Option<String>) -> Template {
-    let template = load_from_file(template_path.unwrap())
+    load_from_file(&template_path.unwrap())
         .map_err(|err| println!("ERROR loading template: {:?}", err))
-        .unwrap_or_default();
-    template
+        .unwrap_or_default()
 }
 
-fn load_from_file(p: String) -> Result<Template, Option<toml::de::Error>> {
+fn load_from_file(p: &str) -> Result<Template, Option<toml::de::Error>> {
     if Path::new(&p).exists() {
         let contents = fs::read_to_string(&p);
         let template: Result<Template, toml::de::Error> =
@@ -282,7 +281,7 @@ fn load_from_file(p: String) -> Result<Template, Option<toml::de::Error>> {
         };
     }
     // This is a ugly hack until proper Errors get implemented
-    return Err(None);
+    Err(None)
 }
 
 // TODO:
