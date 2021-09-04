@@ -6,9 +6,114 @@
 use chrono::{DateTime, Local, Timelike};
 use clap::{App, Arg};
 use rand::seq::SliceRandom;
-use std::{thread, time};
+use serde::{Deserialize, Serialize};
+use std::{fs, path::Path, thread, time};
 
 // TODO implement structs properly
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(default)]
+struct Template {
+    pub language: String,
+    pub hours: Hours,
+    pub minutes: Minutes,
+    pub prepositions: Prepositions,
+    pub special_cases: SpecialCases,
+}
+
+impl Template {
+    fn new(
+        language: String,
+        hours: Hours,
+        minutes: Minutes,
+        prepositions: Prepositions,
+        special_cases: SpecialCases,
+    ) -> Self {
+        Self {
+            language,
+            hours,
+            minutes,
+            prepositions,
+            special_cases,
+        }
+    }
+}
+
+impl Default for Template {
+    fn default() -> Self {
+        let language = String::from("default_deutsch");
+        let minutes: Minutes = Minutes {
+            five_past: String::from("fünf nach"),
+            ten_past: String::from("zehn nach"),
+            quarter_past: String::from("viertel nach"),
+            twenty_past: String::from("zehn vor halb"),
+            twenty_five_past: String::from("fünf vor halb"),
+            half_past: String::from("halb"),
+            twenty_five_to: String::from("fünf nach halb"),
+            twenty_to: String::from("zehn nach halb"),
+            quarter_to: String::from("dreiviertel"),
+            ten_to: String::from("zehn vor"),
+            five_to: String::from("fünf vor"),
+            mini_err: String::from("Deine Minuten sind kaputt."),
+        };
+
+        let hours: Hours = Hours {
+            one: String::from("eins"),
+            two: String::from("zwei"),
+            three: String::from("drei"),
+            four: String::from("vier"),
+            five: String::from("fünf"),
+            six: String::from("sechs"),
+            seven: String::from("sieben"),
+            eight: String::from("acht"),
+            nine: String::from("neun"),
+            ten: String::from("zehn"),
+            eleven: String::from("elf"),
+            twelve: String::from("zwölf"),
+            hour_err: String::from("Was ist mit deinen Stunden los?"),
+        };
+        let special_cases: SpecialCases = SpecialCases {
+            before_midnight: String::from("Es ist gleich Mitternacht."),
+            midnight: String::from("Es ist Mitternacht."),
+            after_midnight: String::from("Es ist nach Mitternacht."),
+            two_to_one: String::from("Es ist demnächst ein Uhr."),
+            one_to_one: String::from("Es ist kurz vor ein Uhr."),
+            exactly_one: String::from("Es ist ein Uhr."),
+            one_past_one: String::from("Es ist kurz nach ein Uhr."),
+            two_past_one: String::from("Es ist kurz nach ein Uhr."),
+            noon: String::from("Es ist Mittag."),
+        };
+        let prepositions: Prepositions = Prepositions {
+            almost: vec![
+                String::from("gleich"),
+                String::from("fast"),
+                String::from("in Kürze"),
+                String::from("bald"),
+                String::from("beinahe"),
+            ],
+            exactly: vec![
+                String::from("exakt"),
+                String::from("genau"),
+                String::from("jetzt"),
+                String::from(""),
+            ],
+            roughly: vec![
+                String::from("circa"),
+                String::from("etwa"),
+                String::from("ungefähr"),
+            ],
+            prepo_err: vec![String::from("Bitte was??")],
+        };
+        println!("Default template loaded.");
+        Template {
+            language: language,
+            hours: hours,
+            minutes: minutes,
+            prepositions: prepositions,
+            special_cases: special_cases,
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct Hours {
     one: String,
     two: String,
@@ -24,6 +129,7 @@ struct Hours {
     twelve: String,
     hour_err: String,
 }
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct Minutes {
     five_past: String,
     ten_past: String,
@@ -38,12 +144,14 @@ struct Minutes {
     five_to: String,
     mini_err: String,
 }
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct Prepositions {
     almost: Vec<String>,
     exactly: Vec<String>,
     roughly: Vec<String>,
     prepo_err: Vec<String>,
 }
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct SpecialCases {
     before_midnight: String,
     after_midnight: String,
@@ -60,76 +168,23 @@ struct SpecialCases {
 // - clean up 'err' and make fn panic
 // - import language templates
 // - default to english
-fn get_time_in_words(local: DateTime<Local>) -> String {
-    let minutes = Minutes {
-        five_past: String::from("fünf nach"),
-        ten_past: String::from("zehn nach"),
-        quarter_past: String::from("viertel nach"),
-        twenty_past: String::from("zehn vor halb"),
-        twenty_five_past: String::from("fünf vor halb"),
-        half_past: String::from("halb"),
-        twenty_five_to: String::from("fünf nach halb"),
-        twenty_to: String::from("zehn nach halb"),
-        quarter_to: String::from("dreiviertel"),
-        ten_to: String::from("zehn vor"),
-        five_to: String::from("fünf vor"),
-        mini_err: String::from("Deine Minuten sind kaputt."),
-    };
-
-    let hours = Hours {
-        one: String::from("eins"),
-        two: String::from("zwei"),
-        three: String::from("drei"),
-        four: String::from("vier"),
-        five: String::from("fünf"),
-        six: String::from("sechs"),
-        seven: String::from("sieben"),
-        eight: String::from("acht"),
-        nine: String::from("neun"),
-        ten: String::from("zehn"),
-        eleven: String::from("elf"),
-        twelve: String::from("zwölf"),
-        hour_err: String::from("Was ist mit deinen Stunden los?"),
-    };
-    let special_cases = SpecialCases {
-        before_midnight: String::from("Es ist gleich Mitternacht."),
-        midnight: String::from("Es ist Mitternacht."),
-        after_midnight: String::from("Es ist nach Mitternacht."),
-        two_to_one: String::from("Es ist demnächst ein Uhr."),
-        one_to_one: String::from("Es ist kurz vor ein Uhr."),
-        exactly_one: String::from("Es ist ein Uhr."),
-        one_past_one: String::from("Es ist kurz nach ein Uhr."),
-        two_past_one: String::from("Es ist kurz nach ein Uhr."),
-        noon: String::from("Es ist Mittag."),
-    };
-    let prepositions = Prepositions {
-        almost: vec![
-            String::from("gleich"),
-            String::from("fast"),
-            String::from("in Kürze"),
-            String::from("bald"),
-            String::from("beinahe"),
-        ],
-        exactly: vec![
-            String::from("exakt"),
-            String::from("genau"),
-            String::from("jetzt"),
-            String::from(""),
-        ],
-        roughly: vec![
-            String::from("circa"),
-            String::from("etwa"),
-            String::from("ungefähr"),
-        ],
-        prepo_err: vec![String::from("Bitte was??")],
-    };
+fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     let delta_minute = local.minute() % 5;
     // print!("Modulo 5 Minuten: {}, ", delta_minute);
     let preposition = match delta_minute {
-        3 | 4 => prepositions.almost.choose(&mut rand::thread_rng()),
-        0 => prepositions.exactly.choose(&mut rand::thread_rng()),
-        1 | 2 => prepositions.roughly.choose(&mut rand::thread_rng()),
-        _ => prepositions.prepo_err.choose(&mut rand::thread_rng()),
+        3 | 4 => template.prepositions.almost.choose(&mut rand::thread_rng()),
+        0 => template
+            .prepositions
+            .exactly
+            .choose(&mut rand::thread_rng()),
+        1 | 2 => template
+            .prepositions
+            .roughly
+            .choose(&mut rand::thread_rng()),
+        _ => template
+            .prepositions
+            .prepo_err
+            .choose(&mut rand::thread_rng()),
     };
     // println!("Minuten: {}", local.minute());
     let minuten = match local.minute() % 5 {
@@ -142,49 +197,49 @@ fn get_time_in_words(local: DateTime<Local>) -> String {
         _ => local.hour12().1,
     };
     let mini_string = match minuten {
-        1 => minutes.five_past,
-        2 => minutes.ten_past,
-        3 => minutes.quarter_past,
-        4 => minutes.twenty_past,
-        5 => minutes.twenty_five_past,
-        6 => minutes.half_past,
-        7 => minutes.twenty_five_to,
-        8 => minutes.twenty_to,
-        9 => minutes.quarter_to,
-        10 => minutes.ten_to,
-        11 | 12 => minutes.five_to,
-        _ => minutes.mini_err,
+        1 => &template.minutes.five_past,
+        2 => &template.minutes.ten_past,
+        3 => &template.minutes.quarter_past,
+        4 => &template.minutes.twenty_past,
+        5 => &template.minutes.twenty_five_past,
+        6 => &template.minutes.half_past,
+        7 => &template.minutes.twenty_five_to,
+        8 => &template.minutes.twenty_to,
+        9 => &template.minutes.quarter_to,
+        10 => &template.minutes.ten_to,
+        11 | 12 => &template.minutes.five_to,
+        _ => &template.minutes.mini_err,
     };
     // println!("Stunden: {}", stunden);
     let hour_string = match stunden {
-        0 | 12 => hours.twelve,
-        1 => hours.one,
-        2 => hours.two,
-        3 => hours.three,
-        4 => hours.four,
-        5 => hours.five,
-        6 => hours.six,
-        7 => hours.seven,
-        8 => hours.eight,
-        9 => hours.nine,
-        10 => hours.ten,
-        11 => hours.eleven,
-        _ => hours.hour_err,
+        0 | 12 => &template.hours.twelve,
+        1 => &template.hours.one,
+        2 => &template.hours.two,
+        3 => &template.hours.three,
+        4 => &template.hours.four,
+        5 => &template.hours.five,
+        6 => &template.hours.six,
+        7 => &template.hours.seven,
+        8 => &template.hours.eight,
+        9 => &template.hours.nine,
+        10 => &template.hours.ten,
+        11 => &template.hours.eleven,
+        _ => &template.hours.hour_err,
     };
     let special_cases = match &*format!("{}:{}", local.hour(), local.minute()) {
-        "23:58" | "23:59" => Some(special_cases.before_midnight),
-        "00:00" => Some(special_cases.midnight),
-        "00:01" | "00:02" => Some(special_cases.after_midnight),
-        "00:58" | "12:58" => Some(special_cases.two_to_one),
-        "00:59" | "12:59" => Some(special_cases.one_to_one),
-        "01:00" | "13:00" => Some(special_cases.exactly_one),
-        "01:01" | "13:01 " => Some(special_cases.one_past_one),
-        "01:02" | "13:02" => Some(special_cases.two_past_one),
-        "12:00" => Some(special_cases.noon),
+        "23:58" | "23:59" => Some(&template.special_cases.before_midnight),
+        "00:00" => Some(&template.special_cases.midnight),
+        "00:01" | "00:02" => Some(&template.special_cases.after_midnight),
+        "00:58" | "12:58" => Some(&template.special_cases.two_to_one),
+        "00:59" | "12:59" => Some(&template.special_cases.one_to_one),
+        "01:00" | "13:00" => Some(&template.special_cases.exactly_one),
+        "01:01" | "13:01 " => Some(&template.special_cases.one_past_one),
+        "01:02" | "13:02" => Some(&template.special_cases.two_past_one),
+        "12:00" => Some(&template.special_cases.noon),
         _ => None,
     };
     if let Some(is_special_case) = special_cases {
-        is_special_case
+        is_special_case.to_string()
     } else if minuten == 0 {
         format!("Es ist {} {}.", preposition.unwrap(), hour_string)
     } else if preposition == Some(&String::from("")) {
@@ -203,12 +258,34 @@ fn get_sys_time() -> time::SystemTime {
     time::SystemTime::now()
 }
 
+fn load_template(template_path: Option<String>) -> Template {
+    let template = load_from_file(template_path.unwrap())
+        .map_err(|err| println!("ERROR loading template: {:?}", err))
+        .unwrap_or_default();
+    template
+}
+
+fn load_from_file(p: String) -> Result<Template, Option<toml::de::Error>> {
+    if Path::new(&p).exists() {
+        let contents = fs::read_to_string(&p);
+        let template: Result<Template, toml::de::Error> =
+            toml::from_str(contents.unwrap().as_str());
+        return match template {
+            Ok(t) => Ok(t),
+            Err(e) => Err(Some(e)),
+        };
+    }
+    // This is a ugly hack until proper Errors get implemented
+    return Err(None);
+}
+
 // TODO:
 // - add 'write to file'
+// - load template files
 // - handle Errors
 fn main() {
     let matches = App::new("Uhrwerk")
-        .author("Johannes Mayrhofer")
+        .author("Johannes Mayrhofer <jm.spam@gmx.net>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("prints current system time in words continuously")
         .arg(
@@ -217,9 +294,32 @@ fn main() {
                 .long("quit")
                 .help("Prints time in words only once."),
         )
+        .arg(
+            Arg::with_name("language")
+                .short("l")
+                .long("language")
+                .help("Chose language. Available Languages see below")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("template")
+                .short("t")
+                .long("template")
+                .help("Specifiy a template path.")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .help("Wirte output to file with specified path.")
+                .takes_value(true),
+        )
         .get_matches();
 
-    println!("{}", get_time_in_words(Local::now()));
+    let template_path = String::from(matches.value_of("template").unwrap());
+    let template = load_template(Some(template_path));
+    println!("{}", get_time_in_words(&template, Local::now()));
     if matches.occurrences_of("quit") == 1 {
         return;
     };
@@ -228,10 +328,11 @@ fn main() {
     loop {
         let local: DateTime<Local> = Local::now();
         // Print on every full minute and update immediatley if the last update happened more then a minute ago
-        if local.second() == 0
-            || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(59)
+        if local.second() == 59
+            || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(61)
         {
-            println!("{}", get_time_in_words(local));
+            // TODO rewrite the following with a cooldown time (30s?) for updates
+            println!("{}", get_time_in_words(&template, local));
             earlier = get_sys_time();
         }
         thread::sleep(time::Duration::from_secs(1));

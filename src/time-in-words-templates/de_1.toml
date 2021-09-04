@@ -1,3 +1,5 @@
+LANGUAGE = "deutsh_1"
+
 HOURS = [
   'zwölf'
   'eins'
