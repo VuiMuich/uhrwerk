@@ -5,8 +5,10 @@
 
 use chrono::{DateTime, Local, Timelike};
 use clap::{App, Arg};
+use kdl::{KdlNode, KdlValue};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+use serde_kdl::{Node, Value};
 use std::{fs, path::Path, thread, time};
 
 // TODO implement structs properly
@@ -246,9 +248,19 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     if let Some(is_special_case) = special_cases {
         is_special_case.to_string()
     } else if minuten == 0 {
-        format!("{} {} {}.", start_sentence.unwrap(), preposition.unwrap(), hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            preposition.unwrap(),
+            hour_string
+        )
     } else if preposition == Some(&String::from("")) {
-        format!("{} {} {}.", start_sentence.unwrap(), mini_string, hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            mini_string,
+            hour_string
+        )
     } else {
         format!(
             "{} {} {} {}.",
@@ -270,13 +282,16 @@ fn load_template(template_path: Option<String>) -> Template {
         .unwrap_or_default()
 }
 
-fn load_from_file(p: &str) -> Result<Template, Option<toml::de::Error>> {
+fn load_from_file(p: &str) -> Result<Template, Option<kdl::KdlError>> {
     if Path::new(&p).exists() {
-        let contents = fs::read_to_string(&p);
-        let template: Result<Template, toml::de::Error> =
-            toml::from_str(contents.unwrap().as_str());
-        return match template {
-            Ok(t) => Ok(t),
+        let contents = fs::read_to_string(&p).unwrap().as_str();
+        let nodes: Result<Vec<KdlNode>, kdl::KdlError> = kdl::parse_document(contents);
+        return match nodes {
+            Ok(n) => {
+                let node: KdlNode = n[0].clone();
+                let template = Node(node);
+                Ok(template)
+            }
             Err(e) => Err(Some(e)),
         };
     }
