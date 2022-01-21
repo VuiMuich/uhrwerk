@@ -246,9 +246,19 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     if let Some(is_special_case) = special_cases {
         is_special_case.to_string()
     } else if minuten == 0 {
-        format!("{} {} {}.", start_sentence.unwrap(), preposition.unwrap(), hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            preposition.unwrap(),
+            hour_string
+        )
     } else if preposition == Some(&String::from("")) {
-        format!("{} {} {}.", start_sentence.unwrap(), mini_string, hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            mini_string,
+            hour_string
+        )
     } else {
         format!(
             "{} {} {} {}.",
@@ -320,15 +330,21 @@ fn main() {
                 .help("Wirte output to file with specified path.")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("digital")
+                .short("d")
+                .long("digital")
+                .help("Print time as Numbers, formatted as HH:MM, 24h."),
+        )
         .get_matches();
 
-    let template_path = matches.value_of("template");
-    let template = match template_path {
-        Some(t) => load_template(Some(t.to_string())),
-        _ => Template::default(),
-    };
-    println!("{}", get_time_in_words(&template, Local::now()));
-    if matches.occurrences_of("quit") == 1 {
+    // let template_path = matches.value_of("template");
+    // let template = match template_path {
+    //     Some(t) => load_template(Some(t.to_string())),
+    //     _ => Template::default(),
+    // };
+    print_time(&matches, Local::now());
+    if matches.occurrences_of("quit") > 0 {
         return;
     };
 
@@ -339,11 +355,25 @@ fn main() {
         if local.second() == 59
             || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(61)
         {
-            // TODO rewrite the following with a cooldown time (30s?) for updates
-            println!("{}", get_time_in_words(&template, local));
+            print_time(&matches, local);
             earlier = get_sys_time();
         }
         thread::sleep(time::Duration::from_secs(1));
+    }
+}
+
+fn print_time(matches: &clap::ArgMatches, local: DateTime<Local>) {
+    let template_path = matches.value_of("template");
+    let template = match template_path {
+        Some(t) => load_template(Some(t.to_string())),
+        _ => Template::default(),
+    };
+    // println!("{}", get_time_in_words(&template, local));
+    // TODO rewrite the following with a cooldown time (30s?) for updates
+    if matches.occurrences_of("digital") > 0 {
+        println!("{}", local.format("%H:%M"));
+    } else {
+        println!("{}", get_time_in_words(&template, local));
     }
 }
 
