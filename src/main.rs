@@ -356,7 +356,7 @@ fn main() {
             || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(61)
         {
             print_time(&matches, local);
-            earlier = get_sys_time();
+            earlier = get_sys_time()
         }
         thread::sleep(time::Duration::from_secs(1));
     }
