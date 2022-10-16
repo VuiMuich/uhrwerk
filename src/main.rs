@@ -7,8 +7,8 @@ extern crate time;
 use clap::{App, Arg};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path, thread, time::SystemTime as SysTime};
-use time::{ext::NumericalStdDuration, OffsetDateTime};
+use std::{fs, path::Path, thread};
+use time::{ext::NumericalStdDuration, format_description, Instant, OffsetDateTime};
 
 // TODO implement structs properly
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -271,8 +271,19 @@ fn get_time_in_words(template: &Template, local: OffsetDateTime) -> String {
     }
 }
 
-fn get_sys_time() -> SysTime {
-    SysTime::now()
+fn get_sys_time() -> Instant {
+    // SysTime::now()
+    Instant::now()
+}
+
+fn get_simple_time() -> String {
+    let format = format_description::parse("[hour]:[minute]").unwrap();
+    OffsetDateTime::now_local()
+        .unwrap()
+        .time()
+        .format(&format)
+        .unwrap()
+        .to_string()
 }
 
 fn load_template(template_path: Option<String>) -> Template {
@@ -310,6 +321,12 @@ fn main() {
                 .help("Prints time in words only once."),
         )
         .arg(
+            Arg::with_name("digital")
+                .short("d")
+                .long("digital")
+                .help("Prints time as digital clock in HH:MM (24h)."),
+        )
+        .arg(
             Arg::with_name("language")
                 .short("l")
                 .long("language")
@@ -337,21 +354,44 @@ fn main() {
         Some(t) => load_template(Some(t.to_string())),
         _ => Template::default(),
     };
-    println!(
-        "{}",
-        get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
-    );
     if matches.occurrences_of("quit") == 1 {
+        if matches.occurrences_of("digital") == 1 {
+            println!("{}", get_simple_time());
+        } else {
+            println!(
+                "{}",
+                get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
+            );
+        }
         return;
     };
 
     let mut earlier = get_sys_time();
+
+    if matches.occurrences_of("digital") == 1 {
+        println!("{}", get_simple_time());
+
+        loop {
+            let local = OffsetDateTime::now_local().unwrap();
+            // Print on every full minute and update immediatley if the last update happened more then a minute ago
+            if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
+                // TODO rewrite the following with a cooldown time (30s?) for updates
+                println!("{}", get_simple_time());
+                earlier = get_sys_time();
+            }
+            thread::sleep(1.std_seconds());
+        }
+    };
+
+    println!(
+        "{}",
+        get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
+    );
+
     loop {
         let local = OffsetDateTime::now_local().unwrap();
         // Print on every full minute and update immediatley if the last update happened more then a minute ago
-        if local.second() == 59
-            || get_sys_time().duration_since(earlier).unwrap() > 61.std_seconds()
-        {
+        if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
             // TODO rewrite the following with a cooldown time (30s?) for updates
             println!("{}", get_time_in_words(&template, local));
             earlier = get_sys_time();
