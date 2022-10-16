@@ -1,0 +1,65 @@
+(
+language: "english_1",
+
+hours: (
+  one: "one",
+  two: "two",
+  three: "three",
+  four: "four",
+  five: "five",
+  six: "six",
+  seven: "seven",
+  eight: "eight",
+  nine: "nine",
+  ten: "ten",
+  eleven: "eleven",
+  twelve: "twelve",
+  hour_err: "whats wrong with the hours"
+),
+
+minutes: (
+  five_past: "five past",
+  ten_past: "ten past",
+  quarter_past: "quarter past",
+  twenty_past: "twenty past",
+  twenty_five_past: "twenty-five past",
+  half_past: "half past",
+  twenty_five_to: "twenty-five to",
+  twenty_to: "twenty to",
+  quarter_to: "quarter to",
+  ten_to: "ten to",
+  five_to: "five to",
+  mini_err: "minute error"
+),
+
+prepositions: (
+  almost: ["almost", "nearly"],
+  exactly: ["exactly", "precisely", "now", ""],
+  roughly: ["just after", "right after", "shortly after","about","around"],
+  prepo_err: ["Aigain, what??"],
+),
+
+special_cases: (
+  before_midnight: "It’s ’round about midnight.",
+  midnight: "It’s midnight.",
+  after_midnight: "It’s ’round about midnight.",
+  two_to_one: "It’s two to one.",
+  one_to_one: "It’s one to one.",
+  exactly_one: "It’s exactly one.",
+  one_past_one: "It’s one past one.",
+  two_past_one: "It’s two past one.",
+  noon: "It’s noon."
+),
+
+start_sentence: ["It’s", "It is"],
+end_sentence: ["o’clock"],
+
+on_the_hour_template: ["start_sentence", "preposition", "hour", "end_sentence"],
+normal_template: ["start_sentence", "preposition","minute","hour"],
+//onTheHourTemplate: "It’s {{ p }} {{ h }} o’clock."
+//template: "It’s {{ p }} {{ m }} {{ h }}."
+
+//ADD_TEXT: [
+//   "* Time to dance."
+//],
+)
