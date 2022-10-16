@@ -2,12 +2,13 @@
 // It is heavily inspired by TickeTack (www.ticketack.de) and actually uses their language strings currently
 // Copyright 2021, Johannes Mayrhofer
 // License MIT
+extern crate time;
 
-use chrono::{DateTime, Local, Timelike};
 use clap::{App, Arg};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path, thread, time};
+use std::{fs, path::Path, thread, time::SystemTime as SysTime};
+use time::{ext::NumericalStdDuration, OffsetDateTime};
 
 // TODO implement structs properly
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -172,7 +173,7 @@ struct SpecialCases {
 // - clean up 'err' and make fn panic
 // - import language templates
 // - default to english
-fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
+fn get_time_in_words(template: &Template, local: OffsetDateTime) -> String {
     let delta_minute = local.minute() % 5;
     // print!("Modulo 5 Minuten: {}, ", delta_minute);
     let start_sentence = template.start_sentence.choose(&mut rand::thread_rng());
@@ -198,8 +199,8 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     };
     // println!("Minuten: {}", minuten);
     let stunden = match minuten {
-        4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 => (local.hour12().1 + 1) % 12,
-        _ => local.hour12().1,
+        4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 => (local.hour() % 12 + 1) % 12,
+        _ => local.hour() % 12,
     };
     let mini_string = match minuten {
         1 => &template.minutes.five_past,
@@ -246,9 +247,19 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     if let Some(is_special_case) = special_cases {
         is_special_case.to_string()
     } else if minuten == 0 {
-        format!("{} {} {}.", start_sentence.unwrap(), preposition.unwrap(), hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            preposition.unwrap(),
+            hour_string
+        )
     } else if preposition == Some(&String::from("")) {
-        format!("{} {} {}.", start_sentence.unwrap(), mini_string, hour_string)
+        format!(
+            "{} {} {}.",
+            start_sentence.unwrap(),
+            mini_string,
+            hour_string
+        )
     } else {
         format!(
             "{} {} {} {}.",
@@ -260,8 +271,8 @@ fn get_time_in_words(template: &Template, local: DateTime<Local>) -> String {
     }
 }
 
-fn get_sys_time() -> time::SystemTime {
-    time::SystemTime::now()
+fn get_sys_time() -> SysTime {
+    SysTime::now()
 }
 
 fn load_template(template_path: Option<String>) -> Template {
@@ -270,11 +281,10 @@ fn load_template(template_path: Option<String>) -> Template {
         .unwrap_or_default()
 }
 
-fn load_from_file(p: &str) -> Result<Template, Option<toml::de::Error>> {
+fn load_from_file(p: &str) -> Result<Template, Option<ron::de::Error>> {
     if Path::new(&p).exists() {
         let contents = fs::read_to_string(&p);
-        let template: Result<Template, toml::de::Error> =
-            toml::from_str(contents.unwrap().as_str());
+        let template: Result<Template, ron::de::Error> = ron::from_str(contents.unwrap().as_str());
         return match template {
             Ok(t) => Ok(t),
             Err(e) => Err(Some(e)),
@@ -327,23 +337,26 @@ fn main() {
         Some(t) => load_template(Some(t.to_string())),
         _ => Template::default(),
     };
-    println!("{}", get_time_in_words(&template, Local::now()));
+    println!(
+        "{}",
+        get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
+    );
     if matches.occurrences_of("quit") == 1 {
         return;
     };
 
     let mut earlier = get_sys_time();
     loop {
-        let local: DateTime<Local> = Local::now();
+        let local = OffsetDateTime::now_local().unwrap();
         // Print on every full minute and update immediatley if the last update happened more then a minute ago
         if local.second() == 59
-            || get_sys_time().duration_since(earlier).unwrap() > time::Duration::from_secs(61)
+            || get_sys_time().duration_since(earlier).unwrap() > 61.std_seconds()
         {
             // TODO rewrite the following with a cooldown time (30s?) for updates
             println!("{}", get_time_in_words(&template, local));
             earlier = get_sys_time();
         }
-        thread::sleep(time::Duration::from_secs(1));
+        thread::sleep(1.std_seconds());
     }
 }
 
