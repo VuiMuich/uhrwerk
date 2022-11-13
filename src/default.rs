@@ -59,7 +59,7 @@ impl Default for Template {
                 String::from("exakt"),
                 String::from("genau"),
                 String::from("jetzt"),
-                String::from(""),
+                String::new(),
             ],
             roughly: vec![
                 String::from("circa"),

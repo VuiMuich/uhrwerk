@@ -1,6 +1,8 @@
+use std::thread::sleep;
+
 use crate::template::Template;
 use rand::seq::SliceRandom;
-use time::OffsetDateTime;
+use time::{ext::NumericalStdDuration, format_description, Instant, OffsetDateTime};
 
 // TODO
 // - clean up 'err' and make fn panic
@@ -86,7 +88,7 @@ pub(crate) fn get_time_in_words(template: &Template, local: OffsetDateTime) -> S
             preposition.unwrap(),
             hour_string
         )
-    } else if preposition == Some(&String::from("")) {
+    } else if preposition == Some(&String::new()) {
         format!(
             "{} {} {}.",
             start_sentence.unwrap(),
@@ -102,4 +104,43 @@ pub(crate) fn get_time_in_words(template: &Template, local: OffsetDateTime) -> S
             hour_string
         )
     }
+}
+
+pub(crate) fn time_loop_template(mut earlier: Instant, template: &Template) -> ! {
+    loop {
+        let local = OffsetDateTime::now_local().unwrap();
+        // Print on every full minute and update immediatley if the last update happened more then a minute ago
+        if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
+            // TODO rewrite the following with a cooldown time (30s?) for updates
+            println!("{}", get_time_in_words(template, local));
+            earlier = get_sys_time();
+        }
+        sleep(1.std_seconds());
+    }
+}
+
+pub(crate) fn time_loop_simple(mut earlier: Instant) -> ! {
+    loop {
+        let local = OffsetDateTime::now_local().unwrap();
+        // Print on every full minute and update immediatley if the last update happened more then a minute ago
+        if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
+            // TODO rewrite the following with a cooldown time (30s?) for updates
+            println!("{}", get_simple_time());
+            earlier = get_sys_time();
+        }
+        sleep(1.std_seconds());
+    }
+}
+
+pub(crate) fn get_sys_time() -> Instant {
+    Instant::now()
+}
+
+pub(crate) fn get_simple_time() -> String {
+    let format = format_description::parse("[hour]:[minute]").unwrap();
+    OffsetDateTime::now_local()
+        .unwrap()
+        .time()
+        .format(&format)
+        .unwrap()
 }
