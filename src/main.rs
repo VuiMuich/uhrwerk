@@ -4,170 +4,20 @@
 // License MIT
 extern crate time;
 
+mod default;
+mod hours;
+mod minutes;
+mod prepositions;
+mod special_cases;
+mod template;
+
+use crate::template::Template;
 use clap::{App, Arg};
 use rand::seq::SliceRandom;
-use serde::{Deserialize, Serialize};
 use std::{fs, path::Path, thread};
 use time::{ext::NumericalStdDuration, format_description, Instant, OffsetDateTime};
 
 // TODO implement structs properly
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(default)]
-struct Template {
-    pub language: String,
-    pub hours: Hours,
-    pub minutes: Minutes,
-    pub prepositions: Prepositions,
-    pub special_cases: SpecialCases,
-    pub start_sentence: Vec<String>,
-    pub end_sentence: Vec<String>,
-    pub on_the_hour_template: Vec<String>,
-    pub normal_template: Vec<String>,
-}
-
-impl Default for Template {
-    fn default() -> Self {
-        let language = String::from("default_deutsch");
-        let minutes: Minutes = Minutes {
-            five_past: String::from("f\u{fc}nf nach"),
-            ten_past: String::from("zehn nach"),
-            quarter_past: String::from("viertel nach"),
-            twenty_past: String::from("zehn vor halb"),
-            twenty_five_past: String::from("f\u{fc}nf vor halb"),
-            half_past: String::from("halb"),
-            twenty_five_to: String::from("f\u{fc}nf nach halb"),
-            twenty_to: String::from("zehn nach halb"),
-            quarter_to: String::from("dreiviertel"),
-            ten_to: String::from("zehn vor"),
-            five_to: String::from("f\u{fc}nf vor"),
-            mini_err: String::from("Deine Minuten sind kaputt."),
-        };
-
-        let hours: Hours = Hours {
-            one: String::from("eins"),
-            two: String::from("zwei"),
-            three: String::from("drei"),
-            four: String::from("vier"),
-            five: String::from("f\u{fc}nf"),
-            six: String::from("sechs"),
-            seven: String::from("sieben"),
-            eight: String::from("acht"),
-            nine: String::from("neun"),
-            ten: String::from("zehn"),
-            eleven: String::from("elf"),
-            twelve: String::from("zw\u{f6}lf"),
-            hour_err: String::from("Was ist mit deinen Stunden los?"),
-        };
-        let special_cases: SpecialCases = SpecialCases {
-            before_midnight: String::from("Es ist gleich Mitternacht."),
-            midnight: String::from("Es ist Mitternacht."),
-            after_midnight: String::from("Es ist nach Mitternacht."),
-            two_to_one: String::from("Es ist demn\u{e4}chst ein Uhr."),
-            one_to_one: String::from("Es ist kurz vor ein Uhr."),
-            exactly_one: String::from("Es ist ein Uhr."),
-            one_past_one: String::from("Es ist kurz nach ein Uhr."),
-            two_past_one: String::from("Es ist kurz nach ein Uhr."),
-            noon: String::from("Es ist Mittag."),
-        };
-        let prepositions: Prepositions = Prepositions {
-            almost: vec![
-                String::from("gleich"),
-                String::from("fast"),
-                String::from("in Kl\u{fc}rze"),
-                String::from("bald"),
-                String::from("beinahe"),
-            ],
-            exactly: vec![
-                String::from("exakt"),
-                String::from("genau"),
-                String::from("jetzt"),
-                String::from(""),
-            ],
-            roughly: vec![
-                String::from("circa"),
-                String::from("etwa"),
-                String::from("ungef\u{e4}hr"),
-            ],
-            prepo_err: vec![String::from("Bitte was??")],
-        };
-        let start_sentence = vec![String::from("Es ist")];
-        let end_sentence = vec![String::from("Uhr")];
-        let on_the_hour_template = vec![
-            String::from("start_sentence"),
-            String::from("prepostition"),
-            String::from("hour"),
-            String::from("end_sentence"),
-        ];
-        let normal_template = vec![
-            String::from("start_sentence"),
-            String::from("prepostition"),
-            String::from("minute"),
-            String::from("hour"),
-        ];
-        //println!("Default template loaded.");
-        Template {
-            language,
-            hours,
-            minutes,
-            prepositions,
-            special_cases,
-            start_sentence,
-            end_sentence,
-            on_the_hour_template,
-            normal_template,
-        }
-    }
-}
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct Hours {
-    one: String,
-    two: String,
-    three: String,
-    four: String,
-    five: String,
-    six: String,
-    seven: String,
-    eight: String,
-    nine: String,
-    ten: String,
-    eleven: String,
-    twelve: String,
-    hour_err: String,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct Minutes {
-    five_past: String,
-    ten_past: String,
-    quarter_past: String,
-    twenty_past: String,
-    twenty_five_past: String,
-    half_past: String,
-    twenty_five_to: String,
-    twenty_to: String,
-    quarter_to: String,
-    ten_to: String,
-    five_to: String,
-    mini_err: String,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct Prepositions {
-    almost: Vec<String>,
-    exactly: Vec<String>,
-    roughly: Vec<String>,
-    prepo_err: Vec<String>,
-}
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct SpecialCases {
-    before_midnight: String,
-    after_midnight: String,
-    midnight: String,
-    two_to_one: String,
-    one_to_one: String,
-    exactly_one: String,
-    one_past_one: String,
-    two_past_one: String,
-    noon: String,
-}
 
 // TODO
 // - clean up 'err' and make fn panic
@@ -202,7 +52,7 @@ fn get_time_in_words(template: &Template, local: OffsetDateTime) -> String {
         4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 => (local.hour() % 12 + 1) % 12,
         _ => local.hour() % 12,
     };
-    let mini_string = match minuten {
+    let mins_string = match minuten {
         1 => &template.minutes.five_past,
         2 => &template.minutes.ten_past,
         3 => &template.minutes.quarter_past,
@@ -257,7 +107,7 @@ fn get_time_in_words(template: &Template, local: OffsetDateTime) -> String {
         format!(
             "{} {} {}.",
             start_sentence.unwrap(),
-            mini_string,
+            mins_string,
             hour_string
         )
     } else {
@@ -265,7 +115,7 @@ fn get_time_in_words(template: &Template, local: OffsetDateTime) -> String {
             "{} {} {} {}.",
             start_sentence.unwrap(),
             preposition.unwrap(),
-            mini_string,
+            mins_string,
             hour_string
         )
     }
