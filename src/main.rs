@@ -12,7 +12,7 @@ mod special_cases;
 mod template;
 
 use crate::template::Template;
-use clap::{App, Arg};
+use clap::{arg, command};
 use rand::seq::SliceRandom;
 use std::{fs, path::Path, thread};
 use time::{ext::NumericalStdDuration, format_description, Instant, OffsetDateTime};
@@ -142,10 +142,11 @@ fn load_template(template_path: Option<String>) -> Template {
         .unwrap_or_default()
 }
 
-fn load_from_file(p: &str) -> Result<Template, Option<ron::de::Error>> {
+fn load_from_file(p: &str) -> Result<Template, Option<ron::de::SpannedError>> {
     if Path::new(&p).exists() {
         let contents = fs::read_to_string(&p);
-        let template: Result<Template, ron::de::Error> = ron::from_str(contents.unwrap().as_str());
+        let template: Result<Template, ron::de::SpannedError> =
+            ron::from_str(contents.unwrap().as_str());
         return match template {
             Ok(t) => Ok(t),
             Err(e) => Err(Some(e)),
@@ -160,52 +161,28 @@ fn load_from_file(p: &str) -> Result<Template, Option<ron::de::Error>> {
 // - load template files
 // - handle Errors
 fn main() {
-    let matches = App::new("Uhrwerk")
+    let matches = command!("Uhrwerk")
         .author("Johannes Mayrhofer <jm.spam@gmx.net>")
         .version(env!("CARGO_PKG_VERSION"))
         .about("prints current system time in words continuously")
-        .arg(
-            Arg::with_name("quit")
-                .short("q")
-                .long("quit")
-                .help("Prints time in words only once."),
-        )
-        .arg(
-            Arg::with_name("digital")
-                .short("d")
-                .long("digital")
-                .help("Prints time as digital clock in HH:MM (24h)."),
-        )
-        .arg(
-            Arg::with_name("language")
-                .short("l")
-                .long("language")
-                .help("Chose language. Available Languages see below")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("template")
-                .short("t")
-                .long("template")
-                .help("Specifiy a template path.")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .help("Wirte output to file with specified path.")
-                .takes_value(true),
-        )
+        .args(&[
+            arg!( -q --quit "Prints time in words only once."),
+            arg!( -d --digital "Prints time as digital clock in HH:MM (24h)."),
+            arg!( -l --language "Chose language. Available Languages see below"),
+            arg!( -t --template "Specifiy a template path."),
+            arg!( -o --output "Wirte output to file with specified path."),
+            arg!([INPUT] "Sets the input path"),
+            arg!([OUTPUT] "Sets the output path"),
+        ])
         .get_matches();
 
-    let template_path = matches.value_of("template");
+    let template_path = matches.get_one::<String>("INPUT").map(String::as_str);
     let template = match template_path {
         Some(t) => load_template(Some(t.to_string())),
         _ => Template::default(),
     };
-    if matches.occurrences_of("quit") == 1 {
-        if matches.occurrences_of("digital") == 1 {
+    if matches.get_flag("quit") {
+        if matches.get_flag("digital") {
             println!("{}", get_simple_time());
         } else {
             println!(
@@ -218,7 +195,7 @@ fn main() {
 
     let mut earlier = get_sys_time();
 
-    if matches.occurrences_of("digital") == 1 {
+    if matches.get_flag("digital") {
         println!("{}", get_simple_time());
 
         loop {

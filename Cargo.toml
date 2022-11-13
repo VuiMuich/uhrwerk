@@ -2,13 +2,13 @@
 name = "uhrwerk"
 version = "0.1.0"
 authors = ["VuiMuich <jm.spam@gmx.net>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "2.33.0"
+clap = { version = "4.0.0", features = ["cargo"] } 
 rand = "0.8.4"
-ron = "0.7.0"
+ron = "0.8.0"
 serde = { version = "1.0.104", features = ["derive"] }
 time = { version = "0.3", features = ["local-offset", "formatting", "parsing"]}
