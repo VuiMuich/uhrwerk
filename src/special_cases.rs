@@ -10,5 +10,5 @@ pub(crate) struct SpecialCases {
     pub(crate) exactly_one: String,
     pub(crate) one_past_one: String,
     pub(crate) two_past_one: String,
-    pub(crate) noon: String,
+    pub(crate) high_noon: String,
 }

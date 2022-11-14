@@ -45,7 +45,7 @@ impl Default for Template {
             exactly_one: String::from("Es ist ein Uhr."),
             one_past_one: String::from("Es ist kurz nach ein Uhr."),
             two_past_one: String::from("Es ist kurz nach ein Uhr."),
-            noon: String::from("Es ist Mittag."),
+            high_noon: String::from("Es ist Mittag."),
         };
         let prepositions: Prepositions = Prepositions {
             almost: vec![

@@ -57,7 +57,7 @@ fn main() {
         } else {
             println!(
                 "{}",
-                get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
+                get_time_in_words(&template, OffsetDateTime::now_local().unwrap().time())
             );
         }
         return;
@@ -73,7 +73,7 @@ fn main() {
 
     println!(
         "{}",
-        get_time_in_words(&template, OffsetDateTime::now_local().unwrap())
+        get_time_in_words(&template, OffsetDateTime::now_local().unwrap().time())
     );
 
     time_loop_template(earlier, &template)
