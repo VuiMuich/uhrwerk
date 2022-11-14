@@ -39,6 +39,7 @@
         prepo_err: ["Bitte was??"],
     ),
 
+    start_sentence: ["Es ist"],
     beforeMidnight: "Es ist gleich Mitternacht.",
     afterMidnight: "Es ist nach Mitternacht.",
 
@@ -67,7 +68,7 @@
         exactly_one: "Es ist ein Uhr.",
         one_past_one: "Es ist kurz nach ein Uhr.",
         two_past_one: "Es ist kurz nach ein Uhr.",
-        noon: "Es ist Mittag.",
+        high_noon: "Es ist Mittag.",
     ),
 
     onTheHourTemplate: "Es ist {{ p }} {{ h }} Uhr.",
