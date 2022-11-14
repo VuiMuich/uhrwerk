@@ -60,7 +60,7 @@ fn get_special_case_words(local: Time, template: &Template) -> Option<&String> {
     }
 }
 
-fn get_hours_words(hours: u8, template: &Template) -> &String {
+pub(crate) fn get_hours_words(hours: u8, template: &Template) -> &String {
     match hours {
         0 | 12 => &template.hours.twelve,
         1 => &template.hours.one,
@@ -136,7 +136,7 @@ pub(crate) fn time_loop_template(mut earlier: Instant, template: &Template) -> !
         if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
             // TODO rewrite the following with a cooldown time (30s?) for updates
             println!("{}", get_time_in_words(template, local));
-            earlier = get_sys_time();
+            earlier = Instant::now();
         }
         sleep(1.std_seconds());
     }
@@ -149,14 +149,10 @@ pub(crate) fn time_loop_simple(mut earlier: Instant) -> ! {
         if local.second() == 59 || earlier.elapsed() > 61.std_seconds() {
             // TODO rewrite the following with a cooldown time (30s?) for updates
             println!("{}", get_simple_time());
-            earlier = get_sys_time();
+            earlier = Instant::now();
         }
         sleep(1.std_seconds());
     }
-}
-
-pub(crate) fn get_sys_time() -> Instant {
-    Instant::now()
 }
 
 pub(crate) fn get_simple_time() -> String {

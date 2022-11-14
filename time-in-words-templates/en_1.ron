@@ -48,7 +48,7 @@ special_cases: (
   exactly_one: "It’s exactly one.",
   one_past_one: "It’s one past one.",
   two_past_one: "It’s two past one.",
-  noon: "It’s noon."
+  high_noon: "It’s noon."
 ),
 
 start_sentence: ["It’s", "It is"],
